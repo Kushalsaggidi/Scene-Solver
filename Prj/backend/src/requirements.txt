@@ -1,0 +1,16 @@
+flask>=2.3
+flask-cors
+flask-pymongo
+python-dotenv
+google-generativeai
+pillow
+numpy
+scipy
+opencv-python
+transformers
+torch
+flask-mail
+langchain-google-genai
+cloudinary
+pymongo
+PyJWT
