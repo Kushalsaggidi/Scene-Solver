@@ -86,3 +86,4 @@ class Case:
         except Exception as error:
             print(f"Error adding image to case: {error}")
             return False
+        
