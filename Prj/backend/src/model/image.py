@@ -34,7 +34,11 @@ class I:
             file_hash = hashlib.sha256(file_data).hexdigest()
 
             # Check if image with the same hash already exists
-            existing_image = mongo.db.images.find_one({'file_hash': file_hash})
+            # existing_image = mongo.db.images.find_one({'file_hash': file_hash})
+            existing_image = mongo.db.images.find_one({
+                            'case_id': self.case_id,
+                            'file_hash': file_hash
+                        })
             if existing_image:
                 print("Image already exists with _id:", existing_image['_id'])
                 return existing_image['_id']
