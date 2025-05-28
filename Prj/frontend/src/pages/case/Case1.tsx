@@ -28,8 +28,8 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { ImageUpload } from "./components/ImageUpload";
 import { ImageGallery } from "./components/ImageGallery";
-import { AnalysisTools } from "./components/AnalysisTools";
 import { ResultsDisplay } from "./components/ResultsDisplay";
+import AnalysisTools from "./components/AnalysisTools";
 import { useCaseManagement } from "./hooks/useCaseManagement";
 import { useToast } from "@/components/ui/use-toast";
 import { jwtDecode } from "jwt-decode";
@@ -42,6 +42,7 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator
   } from "@/components/ui/dropdown-menu";
+
 
 
 export default function Case1() {
@@ -65,6 +66,9 @@ const [activeTab, setActiveTab] = useState<"sources" | "chat" | "studio" | "docs
   
   const [email, setEmail] = useState('');
   const [customMessage, setCustomMessage] = useState('');
+
+  // Inside your parent component (e.g., StudioPanel.tsx or MainDashboard.tsx)
+  const [reportText, setReportText] = useState("");
 
   // Get the user ID from sessionStorage when component mounts
   useEffect(() => {
@@ -511,7 +515,38 @@ const getInitials = (fullName) => {
                       </div>
                     </div>
                   )}
-                  
+                  {/* Show reportText generated from AnalysisTools */}
+                    {reportText && (
+                      <div className="border rounded-lg p-4 bg-muted/20">
+                        <h3 className="font-medium mb-2">Generated Report</h3>
+                        
+                        <textarea
+                          className="w-full p-4 border rounded bg-white text-sm max-h-96 overflow-auto resize-none whitespace-pre-wrap"
+                          value={reportText}
+                          onChange={(e) => setReportText(e.target.value)}
+                          rows={15}
+                        />
+
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            onClick={() => {
+                              const blob = new Blob([reportText], { type: "text/plain" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `case-report-${caseId || "unknown"}.txt`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="px-4 py-2 bg-primary text-white text-sm rounded hover:bg-primary/90"
+                          >
+                            Download Report
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+
                   {/* Display all uploaded images in a grid */}
                   {uploadedImages.length > 0 && !selectedImage && (
                     <div className="border rounded-lg p-4">
@@ -643,12 +678,10 @@ const getInitials = (fullName) => {
           </div>
           
           <AnalysisTools
-            isAnalyzing={isAnalyzing}
-            hasImages={uploadedImages.length > 0}
-            onAnalyzeEvidence={analyzeEvidence}
-            onImageEnhancement={handleImageEnhancement}
-            onGenerateReport={fetchCaseReport}
-          />
+          caseId={caseId}
+          setReportText={setReportText}
+        />
+
         </div>
       </div>
 

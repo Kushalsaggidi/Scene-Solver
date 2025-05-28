@@ -9,10 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Navbar2 } from "@/components/Navbar2";
 import { Footer } from "@/components/Footer";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Navbar3 } from "@/components/Navbar3";
 
 interface Case {
   id: string;
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar2 />
+      <Navbar3 />
 
       <main className="flex-1 container py-8">
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard - All Cases</h1>

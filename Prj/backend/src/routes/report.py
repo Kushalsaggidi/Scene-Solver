@@ -36,29 +36,27 @@ def display():
         analysis_results.append(result)
 
     return jsonify(analysis_results)
+
 @report_bp.route("/generate", methods=["POST"])
 def generate_report():
-    # case=request.form.get("case_id")
-    # l=I.get_by_case_id(case)
-    # for i in l:
-    #     print(i)
-    # return "hello"
-    case_id = request.form.get("case_id")
+    case_id = request.args.get("case_id")
     image_list = I.get_by_case_id(case_id)
 
     if not image_list:
         return "No images found for this case.", 404
 
     # Format data for prompt
-    formatted_images = [
-        {
+    formatted_images = []
+    for img in image_list:
+        detected_objects = img.get("detected_objects", [])
+        first_detected = detected_objects[0] if detected_objects else []
+        formatted_images.append({
             "url": img["file_path"],
-            "detected_objects": img.get("detected_objects", [[]])[0],
+            "detected_objects": first_detected,
             "predicted_crime": img.get("predicted_crime", "Unknown"),
-            "crime_type": img.get("predicted_crime_type", "Unknown")
-        }
-        for img in image_list
-    ]
+            "crime_type": img.get("predicted_crime_type", "Unknown"),
+    })
+
 
     # Jinja template for the report prompt
     prompt_template = Template("""

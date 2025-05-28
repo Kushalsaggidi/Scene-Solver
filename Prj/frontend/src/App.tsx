@@ -23,6 +23,9 @@ import { Terms } from "./components/Terms";
 import About from "./components/About";
 import ForgotPassword from "./pages/forgotpassword";
 import Profile from "./pages/Profile";
+import AdminAbout from "./components/AdminAbout";
+import { AdminFeatures } from "./components/AdminFeatures";
+import AdminProfile from "./pages/AdminProfile";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +55,9 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin-about" element={<AdminAbout />} />
+          <Route path="/admin-features" element={<AdminFeatures />} />
+          <Route path="/admin-profile" element={<AdminProfile />} />
           {/* Add more routes as needed */}
           {/* Catch-all route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />
