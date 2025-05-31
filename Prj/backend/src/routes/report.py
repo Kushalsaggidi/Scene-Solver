@@ -15,6 +15,9 @@ import google.generativeai as genai
 from config.config import llm
 from model.image import I
 from langchain_core.prompts import PromptTemplate
+from config.config import get_mongo_connection
+from bson import ObjectId
+
 report_bp = Blueprint('report', __name__)
 @report_bp.route("/display", methods=["GET"])
 def display():
@@ -36,33 +39,73 @@ def display():
         analysis_results.append(result)
 
     return jsonify(analysis_results)
-
 @report_bp.route("/generate", methods=["POST"])
 def generate_report():
     case_id = request.args.get("case_id")
+
+    # Fetch images
     image_list = I.get_by_case_id(case_id)
-
     if not image_list:
-        return "No images found for this case.", 404
+        return jsonify({"error": "No images found for this case."}), 404
 
-    # Format data for prompt
+    # Connect to MongoDB
+    db = get_mongo_connection()
+    if db is None:
+        return jsonify({"error": "Failed to connect to database"}), 500
+
+    # Fetch case details from 'cases' collection
+    try:
+        case = db["db.cases"].find_one({"_id": ObjectId(case_id)})
+    except Exception as e:
+        return jsonify({"error": f"Invalid case_id: {str(e)}"}), 400
+    if not case:
+        return jsonify({"error": "Case not found in database."}), 404
+
+    title = case.get("title", "Unknown Case")
+    user_id = case.get("user_id")
+    description = case.get("description", "No description provided.")
+    case_type = case.get("case_type", "Unknown")
+
+    # Fetch user email from 'users' collection
+    user = db["users"].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+
+    email = user.get("email", "unknown@email.com")
+    name = email.split("@")[0]  # Extract name from email
+
+    # Format image data
     formatted_images = []
+    analysis_results = []
+
     for img in image_list:
         detected_objects = img.get("detected_objects", [])
         first_detected = detected_objects[0] if detected_objects else []
+
         formatted_images.append({
-            "url": img["file_path"],
+            "url": img.get("file_path"),
             "detected_objects": first_detected,
             "predicted_crime": img.get("predicted_crime", "Unknown"),
             "crime_type": img.get("predicted_crime_type", "Unknown"),
-    })
+        })
 
+        analysis_results.append({
+            "imageUrl": img.get("file_path"),
+            "crimeType": img.get("predicted_crime_type", "Unknown"),
+            "description": img.get("predicted_crime", "No description"),
+            "confidence": round(img.get("confidence_score", 0) * 100, 2)
+        })
 
-    # Jinja template for the report prompt
+    # Jinja template for report
     prompt_template = Template("""
 You are a forensic investigator AI analyzing a crime scene based on image data.
 
-Case ID: {{ case_id }}
+Case Details:
+- Case ID: {{ case_id }}
+- Title: {{ title }}
+- Case Investigator: {{ name }}
+- Description: {{ description }}
+- Type: {{ case_type }}
 
 Images and Observations:
 {% for image in images %}
@@ -80,13 +123,23 @@ Generate a detailed forensic report including:
 - Suggestions for further investigation
 """)
 
-    final_prompt = prompt_template.render(case_id=case_id, images=formatted_images)
-    def stream():
-        try:
-            for chunk in llm.stream([HumanMessage(content=final_prompt)]):
-                yield f"data: {chunk.content}\n\n"
-                print(chunk.content)
-        except Exception as e:
-            yield f"data: Error generating report: {str(e)}\n\n"
+    final_prompt = prompt_template.render(
+        case_id=case_id,
+        title=title,
+        name=name,
+        description=description,
+        case_type=case_type,
+        images=formatted_images
+    )
 
-    return Response(stream(), content_type='text/event-stream')
+    # Call LLM
+    try:
+        response = llm([HumanMessage(content=final_prompt)])
+        report_text = response.content
+    except Exception as e:
+        return jsonify({"error": f"Error generating report: {str(e)}"}), 500
+
+    return jsonify({
+        "report": report_text,
+        "images": analysis_results
+    })

@@ -1,17 +1,20 @@
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+
 interface AnalysisToolsProps {
   caseId: string;
   setReportText: React.Dispatch<React.SetStateAction<string>>;
+  setImageAnalysis: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-const AnalysisTools: React.FC<AnalysisToolsProps> = ({ caseId, setReportText }) => {
+const AnalysisTools: React.FC<AnalysisToolsProps> = ({ caseId, setReportText, setImageAnalysis }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const onGenerateReport = async () => {
     if (!caseId) return;
     setReportText("");
+    setImageAnalysis([]);
     setIsGenerating(true);
 
     try {
@@ -19,16 +22,17 @@ const AnalysisTools: React.FC<AnalysisToolsProps> = ({ caseId, setReportText }) 
         method: "POST",
       });
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
+      if (!response.ok) {
+        throw new Error("Failed to generate report");
+      }
 
-      while (true) {
-        const { value, done } = await reader!.read();
-        if (done) break;
+      const data = await response.json();
 
-        const chunk = decoder.decode(value, { stream: true });
-        const cleanChunk = chunk.replace(/^data:\s*/gm, "");
-        setReportText((prev) => prev + cleanChunk);
+      if (data.error) {
+        setReportText("Error: " + data.error);
+      } else {
+        setReportText(data.report);
+        setImageAnalysis(data.images); // Set image analysis data here
       }
     } catch (error) {
       setReportText("Error generating report.");
@@ -63,6 +67,5 @@ const AnalysisTools: React.FC<AnalysisToolsProps> = ({ caseId, setReportText }) 
     </div>
   );
 };
-
 
 export default AnalysisTools;

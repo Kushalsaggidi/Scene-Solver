@@ -42,6 +42,9 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator
   } from "@/components/ui/dropdown-menu";
+import {  ChevronDown, ChevronUp } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 
 
@@ -69,6 +72,7 @@ const [activeTab, setActiveTab] = useState<"sources" | "chat" | "studio" | "docs
 
   // Inside your parent component (e.g., StudioPanel.tsx or MainDashboard.tsx)
   const [reportText, setReportText] = useState("");
+  const [imageAnalysis, setImageAnalysis] = useState<any[]>([]);
 
   // Get the user ID from sessionStorage when component mounts
   useEffect(() => {
@@ -117,11 +121,180 @@ const [activeTab, setActiveTab] = useState<"sources" | "chat" | "studio" | "docs
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
+// Step 1: ReportBox Component
+function ReportBox({ reportText: initialReportText, caseId, imageAnalysis = [] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [reportText, setReportText] = useState(initialReportText);
 
-  function handlePatternRecognition(): void {
-    throw new Error("Function not implemented.");
-  }
-  
+  return (
+    <>
+      {/* Toggle Button */}
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="px-5 py-3 bg-primary text-white rounded-xl shadow hover:bg-primary/90 transition"
+        >
+          Show Generated Report
+        </button>
+      </div>
+
+      {/* Modal */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 relative mx-4 max-h-[80vh] overflow-y-auto">
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-3 right-4 text-xl font-bold text-gray-500 hover:text-black"
+            >
+              &times;
+            </button>
+
+            {/* Heading */}
+            <h3 className="text-xl font-semibold mb-4 text-primary text-center">
+              Case Report Summary
+            </h3>
+
+            {/* Editable Report Content */}
+            <textarea
+              value={reportText}
+              onChange={(e) => setReportText(e.target.value)}
+              className="w-full text-sm leading-relaxed whitespace-pre-wrap bg-muted/10 p-4 rounded-xl border resize-y max-h-[30vh]"
+              rows={8}
+            />
+
+            {/* Image Analysis Section */}
+            {imageAnalysis.length > 0 && (
+              <div className="mt-6">
+                <h4 className="text-lg font-semibold mb-3">Detected Evidences</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[35vh] overflow-y-auto">
+                  {imageAnalysis.map((item, index) => (
+                    <div
+                      key={index}
+                      className="border rounded p-3 bg-gray-50 shadow-sm flex flex-col items-center"
+                    >
+                      <img
+                        src={item.imageUrl}
+                        alt={`Evidence ${index + 1}`}
+                        className="w-full h-36 object-cover rounded mb-2"
+                      />
+                      <p><strong>Crime Type:</strong> {item.crimeType}</p>
+                      <p><strong>Description:</strong> {item.description}</p>
+                      <p><strong>Confidence:</strong> {item.confidence}%</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Download Report Button */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={async () => {
+                  // Create hidden container for PDF generation
+                  const input = document.createElement("div");
+                  input.style.position = "fixed";
+                  input.style.top = "-9999px";
+                  input.style.left = "-9999px";
+                  input.style.width = "210mm";
+                  input.style.minHeight = "297mm";
+                  input.style.background = "white";
+                  input.style.padding = "20px";
+                  input.style.fontFamily = "Arial, sans-serif";
+                  input.style.color = "#333";
+                  input.style.boxSizing = "border-box";
+
+                  // Use updated reportText from state
+                  const textSection = document.createElement("div");
+                  textSection.innerHTML = `
+                    <h2 style="font-size: 20px; margin-bottom: 10px;">Case Report Summary</h2>
+                    <p style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${reportText}</p>
+                    <br/>
+                    <h3 style="font-size: 18px; margin-bottom: 10px;">Detected Evidences:</h3>
+                  `;
+                  input.appendChild(textSection);
+
+                  // Append evidences
+                  for (let i = 0; i < imageAnalysis.length; i++) {
+                    const { imageUrl, crimeType, description, confidence } = imageAnalysis[i];
+                    const container = document.createElement("div");
+                    container.style.marginBottom = "25px";
+                    container.style.border = "1px solid #ccc";
+                    container.style.padding = "10px";
+                    container.style.borderRadius = "8px";
+                    container.style.boxShadow = "0 0 5px rgba(0,0,0,0.1)";
+                    container.style.pageBreakInside = "avoid";
+
+                    const img = document.createElement("img");
+                    img.src = imageUrl;
+                    img.style.width = "100%";
+                    img.style.maxHeight = "180px";
+                    img.style.objectFit = "contain";
+                    img.style.display = "block";
+                    img.style.marginBottom = "10px";
+
+                    const info = document.createElement("div");
+                    info.innerHTML = `
+                      <p style="margin: 4px 0;"><strong>Crime Type:</strong> ${crimeType}</p>
+                      <p style="margin: 4px 0;"><strong>Description:</strong> ${description}</p>
+                      <p style="margin: 4px 0;"><strong>Confidence:</strong> ${confidence}%</p>
+                    `;
+
+                    container.appendChild(img);
+                    container.appendChild(info);
+                    input.appendChild(container);
+                  }
+
+                  document.body.appendChild(input);
+
+                  try {
+                    const canvas = await html2canvas(input, { scale: 2, useCORS: true });
+                    const imgData = canvas.toDataURL("image/png");
+                    const pdf = new jsPDF("p", "mm", "a4");
+
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfImgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+                    if (pdfImgHeight > pageHeight) {
+                      let heightLeft = pdfImgHeight;
+                      let position = 0;
+
+                      pdf.addImage(imgData, "PNG", 0, position, pageWidth, pdfImgHeight);
+                      heightLeft -= pageHeight;
+
+                      while (heightLeft > 0) {
+                        pdf.addPage();
+                        position = heightLeft - pdfImgHeight;
+                        pdf.addImage(imgData, "PNG", 0, position, pageWidth, pdfImgHeight);
+                        heightLeft -= pageHeight;
+                      }
+                    } else {
+                      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pdfImgHeight);
+                    }
+
+                    pdf.save(`case-report-${caseId || "unknown"}.pdf`);
+                  } catch (err) {
+                    console.error("Error generating PDF:", err);
+                  } finally {
+                    document.body.removeChild(input);
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-white text-sm rounded hover:bg-primary/90"
+              >
+                Download Report
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </>
+  );
+}  
 
   // Inside the component, add a console log to debug
   useEffect(() => {
@@ -516,35 +689,15 @@ const getInitials = (fullName) => {
                     </div>
                   )}
                   {/* Show reportText generated from AnalysisTools */}
-                    {reportText && (
-                      <div className="border rounded-lg p-4 bg-muted/20">
-                        <h3 className="font-medium mb-2">Generated Report</h3>
-                        
-                        <textarea
-                          className="w-full p-4 border rounded bg-white text-sm max-h-96 overflow-auto resize-none whitespace-pre-wrap"
-                          value={reportText}
-                          onChange={(e) => setReportText(e.target.value)}
-                          rows={15}
-                        />
-
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            onClick={() => {
-                              const blob = new Blob([reportText], { type: "text/plain" });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = `case-report-${caseId || "unknown"}.txt`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }}
-                            className="px-4 py-2 bg-primary text-white text-sm rounded hover:bg-primary/90"
-                          >
-                            Download Report
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    {/* // Step 3: Conditionally render the ReportBox */}
+                    
+                  {reportText && (
+                    <ReportBox 
+                      reportText={reportText} 
+                      caseId={caseId} 
+                      imageAnalysis={imageAnalysis} 
+                    />
+                  )}
 
 
                   {/* Display all uploaded images in a grid */}
@@ -680,6 +833,7 @@ const getInitials = (fullName) => {
           <AnalysisTools
           caseId={caseId}
           setReportText={setReportText}
+          setImageAnalysis={setImageAnalysis}
         />
 
         </div>
