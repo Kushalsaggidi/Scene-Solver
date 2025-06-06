@@ -28,6 +28,7 @@ import AdminAbout from "./components/AdminAbout";
 import { AdminFeatures } from "./components/AdminFeatures";
 import AdminProfile from "./pages/AdminProfile";
 import Case2 from "./pages/case/case2";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,8 @@ const App = () => (
           <Route path="/admin-about" element={<AdminAbout />} />
           <Route path="/admin-features" element={<AdminFeatures />} />
           <Route path="/admin-profile" element={<AdminProfile />} />
+          <Route path="/public-profile" element={<PublicProfile />} />
+
           {/* Add more routes as needed */}
           {/* Catch-all route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />

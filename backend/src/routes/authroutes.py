@@ -26,7 +26,9 @@ ADMIN_EMAIL = "saggkushal@gmail.com"
 JWT_SECRET = os.getenv("JWT_SECRET", "default_secret")
 
 roles={
-    "sairohan005@gmail.com":"investigator"
+    "sairohan005@gmail.com":"investigator",
+    "saggidikushal@gmail.com":"investigator",
+    "vangarimahender2@gmail.com":"investigator"
 }
 
 

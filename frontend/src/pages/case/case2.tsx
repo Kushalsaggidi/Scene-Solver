@@ -382,7 +382,7 @@ export default function Case2() {
     useEffect(()=>{
       const fetchPreviousReport = () => {
 
-        fetch(`http://localhost:7070/api/report/fetch/${caseId}`)
+        fetch(`http://localhost:7070/api/report/fetch?case_id=${caseId}`)
           .then(async (res) => {
             const data = await res.json();
             if (!res.ok) {

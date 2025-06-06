@@ -41,7 +41,7 @@ def get_mongo_connection():
         return None
 
 # Load Crime Dataset
-data_path = "/Users/rohittanuku/Downloads/SceneSolver-main/backend/crime_dataset.csv"
+data_path = r"C:\Users\Kushal\Desktop\Final Prj\Prj\backend\crime_dataset.csv"
 def data_set():
     if os.path.exists(data_path):
         df = pd.read_csv(data_path)

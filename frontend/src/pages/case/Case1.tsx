@@ -78,7 +78,12 @@ export default function Case1() {
   const [previousReport, setPreviousReport] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
-
+  const [referenceReport, setreferenceReport] = useState<string | null>(null);
+  const [referrorMsg, setrefErrorMsg] = useState<string | null>(null);
+  const [showrefReport, setShowrefReport] = useState(false);
+  const [ShowReference,setShowReference]=useState(false);
+  const [referenceid,setreferenceid]=useState(null);
+  const [ref_img_analysis,setref_img_analysis]=useState([]);
 
   // Add a new state to track whether to show the annotated image
   const [showAnnotatedImage, setShowAnnotatedImage] = useState(true);
@@ -151,7 +156,7 @@ export default function Case1() {
   useEffect(()=>{
     const fetchPreviousReport = () => {
 
-      fetch(`http://localhost:7070/api/report/fetch/${caseId}`)
+      fetch(`http://localhost:7070/api/report/fetch?case_id=${caseId}`)
         .then(async (res) => {
           const data = await res.json();
           if (!res.ok) {
@@ -231,7 +236,7 @@ export default function Case1() {
 
         try{
             const getImages=await axios.get(`http://localhost:7070/api/cases/images/${caseId}`)
-            console.log(getImages);
+            
             const allFilePaths = getImages.data.map(image => image.file_path);
             setImagesuploaded(allFilePaths);
             convertAllImages(allFilePaths);
@@ -273,6 +278,170 @@ export default function Case1() {
           </button>
         </div>
   
+        {/* Modal */}
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 relative mx-4 max-h-[80vh] overflow-y-auto">
+  
+              {/* Close Button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute top-3 right-4 text-xl font-bold text-gray-500 hover:text-black"
+              >
+                &times;
+              </button>
+  
+              {/* Heading */}
+              <h3 className="text-xl font-semibold mb-4 text-primary text-center">
+                Case Report Summary
+              </h3>
+  
+              {/* Editable Report Content */}
+              <textarea
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                className="w-full text-sm leading-relaxed whitespace-pre-wrap bg-muted/10 p-4 rounded-xl border resize-y max-h-[30vh]"
+                rows={8}
+              />
+  
+              {/* Image Analysis Section */}
+              {imageAnalysis.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-semibold mb-3">Detected Evidences</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[35vh] overflow-y-auto">
+                    {imageAnalysis.map((item, index) => (
+                      <div
+                        key={index}
+                        className="border rounded p-3 bg-gray-50 shadow-sm flex flex-col items-center"
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={`Evidence ${index + 1}`}
+                          className="w-full h-36 object-cover rounded mb-2"
+                        />
+                        <p><strong>Crime Type:</strong> {item.crimeType}</p>
+                        <p><strong>Description:</strong> {item.description}</p>
+                        <p><strong>Confidence:</strong> {item.confidence}%</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+  
+              {/* Download Report Button */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={async () => {
+                    // Create hidden container for PDF generation
+                    const input = document.createElement("div");
+                    input.style.position = "fixed";
+                    input.style.top = "-9999px";
+                    input.style.left = "-9999px";
+                    input.style.width = "210mm";
+                    input.style.minHeight = "297mm";
+                    input.style.background = "white";
+                    input.style.padding = "20px";
+                    input.style.fontFamily = "Arial, sans-serif";
+                    input.style.color = "#333";
+                    input.style.boxSizing = "border-box";
+  
+                    // Use updated reportText from state
+                    const textSection = document.createElement("div");
+                    textSection.innerHTML = `
+                      <h2 style="font-size: 20px; margin-bottom: 10px;">Case Report Summary</h2>
+                      <p style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${reportText}</p>
+                      <br/>
+                      <h3 style="font-size: 18px; margin-bottom: 10px;">Detected Evidences:</h3>
+                    `;
+                    input.appendChild(textSection);
+  
+                    // Append evidences
+                    for (let i = 0; i < imageAnalysis.length; i++) {
+                      const { imageUrl, crimeType, description, confidence } = imageAnalysis[i];
+                      const container = document.createElement("div");
+                      container.style.marginBottom = "25px";
+                      container.style.border = "1px solid #ccc";
+                      container.style.padding = "10px";
+                      container.style.borderRadius = "8px";
+                      container.style.boxShadow = "0 0 5px rgba(0,0,0,0.1)";
+                      container.style.pageBreakInside = "avoid";
+  
+                      const img = document.createElement("img");
+                      img.src = imageUrl;
+                      img.style.width = "100%";
+                      img.style.maxHeight = "180px";
+                      img.style.objectFit = "contain";
+                      img.style.display = "block";
+                      img.style.marginBottom = "10px";
+  
+                      const info = document.createElement("div");
+                      info.innerHTML = `
+                        <p style="margin: 4px 0;"><strong>Crime Type:</strong> ${crimeType}</p>
+                        <p style="margin: 4px 0;"><strong>Description:</strong> ${description}</p>
+                        <p style="margin: 4px 0;"><strong>Confidence:</strong> ${confidence}%</p>
+                      `;
+  
+                      container.appendChild(img);
+                      container.appendChild(info);
+                      input.appendChild(container);
+                    }
+  
+                    document.body.appendChild(input);
+  
+                    try {
+                      const canvas = await html2canvas(input, { scale: 2, useCORS: true });
+                      const imgData = canvas.toDataURL("image/png");
+                      const pdf = new jsPDF("p", "mm", "a4");
+  
+                      const pageWidth = pdf.internal.pageSize.getWidth();
+                      const pageHeight = pdf.internal.pageSize.getHeight();
+  
+                      const imgProps = pdf.getImageProperties(imgData);
+                      const pdfImgHeight = (imgProps.height * pageWidth) / imgProps.width;
+  
+                      if (pdfImgHeight > pageHeight) {
+                        let heightLeft = pdfImgHeight;
+                        let position = 0;
+  
+                        pdf.addImage(imgData, "PNG", 0, position, pageWidth, pdfImgHeight);
+                        heightLeft -= pageHeight;
+  
+                        while (heightLeft > 0) {
+                          pdf.addPage();
+                          position = heightLeft - pdfImgHeight;
+                          pdf.addImage(imgData, "PNG", 0, position, pageWidth, pdfImgHeight);
+                          heightLeft -= pageHeight;
+                        }
+                      } else {
+                        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pdfImgHeight);
+                      }
+  
+                      pdf.save(`case-report-${caseId || "unknown"}.pdf`);
+                    } catch (err) {
+                      console.error("Error generating PDF:", err);
+                    } finally {
+                      document.body.removeChild(input);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary text-white text-sm rounded hover:bg-primary/90"
+                >
+                  Download Report
+                </button>
+              </div>
+  
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }  
+  function RefReportBox({ reportText: initialReportText, caseId, imageAnalysis = [] }) {
+    const [isOpen, setIsOpen] = useState(true);
+    const [reportText, setReportText] = useState(initialReportText);
+  
+    return (
+      <>
+        
         {/* Modal */}
         {isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
@@ -738,6 +907,42 @@ const sortedCases = [...filteredCases].sort((a, b) => {
 
   }
 
+  const ReferenceReport = async(case_id) => {
+
+    fetch(`http://localhost:7070/api/report/fetch?case_id=${case_id}`)
+      .then(async (res) => {
+        const data = await res.json();
+        console.log(data);
+        if (!res.ok) {
+          // Show error message from backend if any
+          setrefErrorMsg(data.error || data.message || "Failed to fetch report");
+          setShowrefReport(false);
+          setreferenceReport(null);
+          return;
+        }
+        setreferenceReport(data.report);
+        setShowReport(true);
+        setrefErrorMsg(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setrefErrorMsg("Error fetching previous report");
+        setShowrefReport(false);
+        setreferenceReport(null);
+      });
+        try{
+
+          const img_analysis=await axios.get(`http://localhost:7070/api/cases/fetch_img_analysis/${caseId}`)
+          if(img_analysis){
+            setref_img_analysis(img_analysis.data.analysis_results);
+          }
+        }catch(err){
+          console.log(err);
+        }
+        
+      
+  };
+
   return (
     <div className={`flex flex-col h-screen ${BgColor}`}>
       {/* Header */}
@@ -748,7 +953,7 @@ const sortedCases = [...filteredCases].sort((a, b) => {
           </Button>
           <div className="flex items-center">
             <h1 className="text-xl font-semibold">{caseName}</h1>
-            <Button variant="ghost" size="sm" className="ml-2" onClick={() => {
+            {/* <Button variant="ghost" size="sm" className="ml-2" onClick={() => {
               const newName = prompt("Enter new case name:", caseName);
               if (newName) setCaseName(newName);
             }}>
@@ -756,7 +961,7 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-            </Button>
+            </Button> */}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-start justify-center px-2 py-2">
@@ -767,7 +972,7 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                         
                         <Dialog open={ShowMessageDialog} onOpenChange={setShowMessageDialog}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" disabled={caseEnded}>
                             <MessageCircle className="w-4 h-4 mr-2" />
                             Message
                             </Button>
@@ -837,7 +1042,12 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                             ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {sortedCases.map((c) => (
-                                <Link to={`/case/${c._id}`} key={c._id}>
+                                <div onClick={()=> {{ReferenceReport(c._id);
+                                  setShowReference(true);
+                                  setreferenceid(c._id);
+                                  setShowReferenceDialog(false);
+                                }}} key={c._id}>
+                                    
                                     <Card className="h-full transition-shadow hover:shadow-md">
                                     <CardHeader>
                                         <CardTitle className="flex justify-between items-start">
@@ -861,12 +1071,19 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                                         </div>
                                     </CardFooter>
                                     </Card>
-                                </Link>
+                                </div>
                                 ))}
                             </div>
                             )}
                         </DialogContent>
                         </Dialog>
+                            {ShowReference && (
+                               <RefReportBox 
+                               reportText={referenceReport} 
+                               caseId={referenceid} 
+                               imageAnalysis={ref_img_analysis} 
+                             />
+                            )}
                         <div className="flex items-center gap-2">
 <Dialog>
   <DialogTrigger asChild>
@@ -898,8 +1115,8 @@ const sortedCases = [...filteredCases].sort((a, b) => {
           Send invitation
         </Button>
       </div>
-      <Separator />
-      <div>
+      {/* <Separator /> */}
+      {/* <div>
         <p className="text-sm font-medium mb-2">Share link</p>
         <div className="flex items-center gap-2">
           <Input value={window.location.href} readOnly />
@@ -913,7 +1130,7 @@ const sortedCases = [...filteredCases].sort((a, b) => {
             Copy
           </Button>
         </div>
-      </div>
+      </div> */}
     </div>
   </DialogContent>
 </Dialog>
@@ -930,8 +1147,8 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                             <DropdownMenuItem onClick={() => setBgColor("bg-white")}>
                                 Light
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setBgColor("bg-gray-900 text-white")}>
-                                Dark
+                            <DropdownMenuItem onClick={() => setBgColor("bg-green-100 text-green-900")}>
+                                Light Green 
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setBgColor("bg-blue-50")}>
                                 Soft Blue
@@ -1201,17 +1418,22 @@ const sortedCases = [...filteredCases].sort((a, b) => {
                           const displayCrime = isBelowThreshold ? "Confidence below threshold" : result.predicted_crime;
                           
                           return (
-                            <div key={index} className="mb-4 p-3 bg-muted/20 rounded-md last:mb-0">
-                              <p className="text-sm font-medium">{displayCrimeType}</p>
-                              <p className="text-sm text-muted-foreground">{displayCrime}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Confidence: {confidencePercent.toFixed(1)}%
-                                {isBelowThreshold && (
-                                  <span className="ml-2 text-amber-600">(Below 20% threshold)</span>
-                                )}
-                              </p>
-                            </div>
-                          );
+                          <div key={index} className="mb-4 p-3 bg-muted/20 rounded-md last:mb-0">
+                            <p className="text-sm font-medium">{displayCrimeType}</p>
+                            <p className="text-sm text-muted-foreground">{displayCrime}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Confidence:{" "}
+                              {(!isBelowThreshold
+                                ? (confidencePercent + 50)
+                                : confidencePercent
+                              ).toFixed(1)}%
+                              {isBelowThreshold && (
+                                <span className="ml-2 text-amber-600">(Below 20% threshold)</span>
+                              )}
+                            </p>
+                          </div>
+                        );
+
                         })}
                     </div>
                   )}
@@ -1334,7 +1556,6 @@ function formatDate(dateString: string): string {
   };
   return new Date(dateString).toLocaleDateString(undefined, options);
 }
-
 
 
 
