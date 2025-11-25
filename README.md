@@ -92,6 +92,11 @@ Create Pipeline View for Maven web project
          |--- create
 Pipeline Flow: Layout: Based on upstream/downstream relationship, Initial job: MavenJava_Build, Apply and Save OK
 Run the Pipeline and Check Output
+Open Tomcat homepage in another tab, Click on the "/webpath" option under the manager app
+ Note: 1.	 It ask for user credentials for login ,provide the credentials of tomcat.
+2.	It provide the page with out project name which is highlighted.
+3.	After clicking on our project we can see output.
+
 
 
 
@@ -172,6 +177,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-window
 minikube start --driver=docker
 minikube kubectl -- get pods -A
 kubectl create deployment mynginx --image=nginx
+if already created then kubectl set image deployment/myngnix nginx=nginx:latest
+kubectl get deployments
 kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80
 kubectl scale deployment mynginx --replicas=4
 kubectl get service myngnix
