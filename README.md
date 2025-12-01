@@ -1,3 +1,70 @@
+This is the project to automated crime detection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+WEEK 1
+
+MAVEN PROJECT BUILDING
+Open gitbash ->mkdir selab ->cd selab(A foler will be created at Cdrive/users/name)
+Open eclipse File->import->Git->Projects from git->at clone url, paste the url->click next
+->browse the selab folder->click next and finish
+In project explorer cloned prj will be visible
+Correct the pom.xml code in prj
+->right click on prj->run as maven clean(BUILD SUCCESS SHOULD DISPLAY)->run as maven install
+->run as maven test->run as maven build, in goals give clean install test->next(BUILD SUCCESS)
+In prj folder/target/.war will be generated
+Right click on prj folder->run as->run on server
+select apache->select tomcat v9->browse the location where tomcat was installed
+Server will start running 
+Go to edge give localhost:8080 then a web page like "WELCOME" will be visible
+
+PUSH THIS PRJ TO GITHUB
+Create a repo
+Delete .git file in prj folder
+Open gitbash->git init->git add .->git commit -m "msg"
+Give all the commands in gitbash present under created repo in GitHub
+
+DOCKER IMAGE BUILDING
+Open powershell
+->cdselab->cd foldername that has pom.xml->mvn clean package
+A war file will be generated->Create a folder in selab name it as docker
+keep the generated war file and existed dockerfile in the docker folder
+Open dockerfile in notepad u will see target/*.war remove that and give the generated war file name and
+under tomcat give EXPOSE 8080
+Go to powershell->docker build -t csimage:latest .(use dot when actual command dont work)->docker images (here csimage should be visible)
+->docker run -d --name library_app -p 7007:8080 csimage:latest
+Open chrome->type hub.docker.com and sign in
+open repositories section present at leftside in docker hub
+Go to powershell again->docker login->docker tag csimage:latest username/csimage:2.0
+->docker push username/csimage:2.0->docker pull username/csimage:2.0 (output be like image created UpToDate...)
+Open chrome->type localhost:7007 (Entire web page should be visible)
+
+(Can use any number instead of 2.0)
+
+
 WEEK 8 Jenkins
 
 STEP 1: 
