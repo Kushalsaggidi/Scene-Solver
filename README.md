@@ -409,52 +409,93 @@ Build periodically -> schedule=* * * * *
 Apply → Save → Build Now → Stages
 
 ✅ WEEK 10 – Kubernetes
-command prompt
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe
+🔹 1. Start Minikube with Docker Driver
+
+(Open PowerShell as Administrator)
+
+minikube delete
 minikube start --driver=docker
-minikube kubectl -- get pods -A
+
+
+✅ This creates a fresh Kubernetes cluster using Docker.
+
+🔹 2. Verify Kubernetes Cluster
+kubectl get nodes
+kubectl get pods -A
+
+
+✅ Confirms the cluster is running.
+
+🔹 3. Create Nginx Deployment
 kubectl create deployment mynginx --image=nginx
-if already created then
-kubectl set image deployment/myngnix nginx=nginx:latest
+
+
+✅ Creates a deployment named mynginx using the Nginx image.
+
+🔹 4. If Deployment Already Exists (Update Image)
+kubectl set image deployment/mynginx nginx=nginx:latest
+
+🔹 5. Check Deployment
 kubectl get deployments
+
+🔹 6. Expose Deployment as a Service
 kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80
+
+
+✅ Makes the application accessible outside the cluster.
+
+🔹 7. Scale the Deployment to 4 Replicas
 kubectl scale deployment mynginx --replicas=4
-kubectl get service myngnix
+
+
+✅ Creates 4 running pods.
+
+🔹 8. View Pods and Services
+kubectl get pods
 kubectl get svc
+
+🔹 9. Access Application Using Port Forward
 kubectl port-forward svc/mynginx 8081:80
 
 
-If error:
+Open in browser:
 
+http://localhost:8081
+
+
+✅ Nginx welcome page will be displayed.
+
+🔹 10. If Port Forward Doesn’t Work
 minikube tunnel
 minikube service mynginx --url
+
+
+Open the shown URL in browser.
+
+🔹 11. (Optional) Describe Service for Debugging
+kubectl describe svc mynginx
+
+🔹 12. Stop and Delete Kubernetes Resources
 kubectl delete deployment mynginx
 kubectl delete service mynginx
 minikube stop
 minikube delete
 
-localhost:8081
-or
-minikube service mynginx
-kubectl describe svc mynginx (optional)
-
-
-Nagios:
-
+✅ NAGIOS USING DOCKER
+🔹 13. Pull Nagios Image
 docker pull jasonrivers/nagios:latest
+
+🔹 14. Run Nagios Container
 docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
 
-localhost:8888
-username= nagiosadmin
-password= nagios
 
+Open in browser:
 
-Optional:
+http://localhost:8888
 
-docker stop nagiosdemo
-docker rm nagiosdemo
-docker images
-docker rmi jasonrivers/nagios:latest
+✅ Login Credentials:
+Username: nagiosadmin
+Password: nagios
 
 ✅ WEEK 11
 
